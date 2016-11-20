@@ -9,9 +9,14 @@
 #define PARITYON 0
 #define PARITY 0
 
-#define INPUT_MAX_BUFFER 255
+#define INPUT_MAX_BUFFER 8192
+
+int fd;
+FILE *input, *output;
+char input_buffer[INPUT_MAX_BUFFER + 1];
 
 long parse_baud_rate(char *str) {
+
 	long number;
 	if(sscanf(str, "%ld", &number) != 1)
 		return -1;
@@ -24,16 +29,24 @@ void signal_handler(int status) {
 	INPUT_AVAILABLE = 1;
 }
 
+void cleanup() {
+	close(fd);
+	fclose(input);
+	fclose(output);
+	printf("Works\n");
+	fflush(stdout);
+}
+
 int main(int argc, char **argv) {
 	if(argc != 3) {
 		puts("Incorrect number of arguments");
 		return 1;
 	}
 
-	FILE *input = fopen("/dev/tty", "r");
-	FILE *output = fopen("/dev/tty", "w");
+	input = fopen("/dev/tty", "r");
+	output = fopen("/dev/tty", "w");
 
-	int fd = open(argv[1], O_RDWR | O_NOCTTY | O_NONBLOCK);
+	fd = open(argv[1], O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if(fd < 0) {
 		fprintf(stderr, "Can not open %s", argv[1]);
 		return 1;
@@ -67,7 +80,8 @@ int main(int argc, char **argv) {
 	char command_buffer[80];
 	int command_length = 0;
 
-	char input_buffer[INPUT_MAX_BUFFER];
+	signal(SIGTERM, cleanup);
+	signal(SIGABRT, cleanup);
 
 	while(1) {
 		char key;
@@ -92,4 +106,6 @@ int main(int argc, char **argv) {
 			INPUT_AVAILABLE = 0;
 		}
 	}
+
+	cleanup();
 }
