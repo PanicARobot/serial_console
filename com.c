@@ -50,6 +50,11 @@ int main(int argc, char **argv) {
 
 	long baud_rate = parse_baud_rate(argv[2]);
 
+	if(baud_rate < 0) {
+		fprintf(stderr, "Can not parse baud rate");
+		return 1;
+	}
+
 	struct sigaction saio;
 
 	saio.sa_handler = signal_handler;
