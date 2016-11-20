@@ -15,13 +15,7 @@ int fd;
 FILE *input, *output;
 char input_buffer[INPUT_MAX_BUFFER + 1];
 
-long parse_baud_rate(char *str) {
-
-	long number;
-	if(sscanf(str, "%ld", &number) != 1)
-		return -1;
-	return number;
-}
+struct termios oldtio, newtio;
 
 volatile int INPUT_AVAILABLE;
 
@@ -29,12 +23,14 @@ void signal_handler(int status) {
 	INPUT_AVAILABLE = 1;
 }
 
-void cleanup() {
-	close(fd);
-	fclose(input);
-	fclose(output);
-	printf("Works\n");
-	fflush(stdout);
+void cleanup(int);
+
+long parse_baud_rate(char *str) {
+
+	long number;
+	if(sscanf(str, "%ld", &number) != 1)
+		return -1;
+	return number;
 }
 
 int main(int argc, char **argv) {
@@ -64,8 +60,6 @@ int main(int argc, char **argv) {
 
 	fcntl(fd, F_SETOWN, getpid());
 	fcntl(fd, F_SETFL, FASYNC);
-
-	struct termios oldtio, newtio;
 
 	tcgetattr(fd, &oldtio);
 	newtio.c_cflag = baud_rate | CRTSCTS | DATABITS | STOPBITS | PARITYON | PARITY | CLOCAL | CREAD;
@@ -107,5 +101,15 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	cleanup();
+	cleanup(0);
+}
+
+void cleanup(int s) {
+	tcsetattr(fd, TCSANOW, &oldtio);
+	close(fd);
+
+	fclose(input);
+	fclose(output);
+
+	fflush(stdout);
 }
