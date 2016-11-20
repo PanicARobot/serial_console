@@ -86,8 +86,8 @@ int main(int argc, char **argv) {
 
 		if(INPUT_AVAILABLE == 1) {
 			int input_length = read(fd, input_buffer, INPUT_MAX_BUFFER);
-			for(int i = 0; i < input_length; ++i)
-				fputc((int) input_buffer[i], output);
+			input_buffer[input_length] = '\0';
+			printf("%s", input_buffer);
 
 			INPUT_AVAILABLE = 0;
 		}
