@@ -12,7 +12,6 @@
 #define INPUT_MAX_BUFFER 8192
 
 int fd;
-FILE *input, *output;
 char input_buffer[INPUT_MAX_BUFFER + 1];
 
 struct termios oldtio, newtio;
@@ -26,7 +25,6 @@ void signal_handler(int status) {
 void cleanup(int);
 
 long parse_baud_rate(char *str) {
-
 	long number;
 	if(sscanf(str, "%ld", &number) != 1)
 		return -1;
@@ -38,9 +36,6 @@ int main(int argc, char **argv) {
 		puts("Incorrect number of arguments");
 		return 1;
 	}
-
-	input = fopen("/dev/tty", "r");
-	output = fopen("/dev/tty", "w");
 
 	fd = open(argv[1], O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if(fd < 0) {
@@ -84,7 +79,7 @@ int main(int argc, char **argv) {
 
 	while(1) {
 		char key;
-		if(fread(&key, 1, 1, input) == 1) {
+		if(fread(&key, 1, 1, stdin) == 1) {
 			if(key == 0x1B) break;
 			if(key == 0x0A) {
 				if(command_length > 0) {
@@ -112,9 +107,6 @@ int main(int argc, char **argv) {
 void cleanup(int s) {
 	tcsetattr(fd, TCSANOW, &oldtio);
 	close(fd);
-
-	fclose(input);
-	fclose(output);
 
 	fflush(stdout);
 }
