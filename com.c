@@ -4,11 +4,6 @@
 #include <termios.h>
 #include <sys/signal.h>
 
-#define DATABITS 8
-#define STOPBITS 0
-#define PARITYON 0
-#define PARITY 0
-
 #define INPUT_MAX_BUFFER 8192
 
 int fd;
@@ -24,15 +19,8 @@ void signal_handler(int status) {
 
 void cleanup(int);
 
-long parse_baud_rate(char *str) {
-	long number;
-	if(sscanf(str, "%ld", &number) != 1)
-		return -1;
-	return number;
-}
-
 int main(int argc, char **argv) {
-	if(argc != 3) {
+	if(argc != 2) {
 		puts("Incorrect number of arguments");
 		return 1;
 	}
@@ -40,13 +28,6 @@ int main(int argc, char **argv) {
 	fd = open(argv[1], O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if(fd < 0) {
 		fprintf(stderr, "Can not open %s", argv[1]);
-		return 1;
-	}
-
-	long baud_rate = parse_baud_rate(argv[2]);
-
-	if(baud_rate < 0) {
-		fprintf(stderr, "Can not parse baud rate");
 		return 1;
 	}
 
@@ -60,16 +41,6 @@ int main(int argc, char **argv) {
 
 	fcntl(fd, F_SETOWN, getpid());
 	fcntl(fd, F_SETFL, FASYNC);
-
-	tcgetattr(fd, &oldtio);
-	newtio.c_cflag = baud_rate | CRTSCTS | DATABITS | STOPBITS | PARITYON | PARITY | CLOCAL | CREAD;
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag = 0;
-	newtio.c_lflag = 0;
-	newtio.c_cc[VMIN] = 1;
-	newtio.c_cc[VTIME] = 0;
-	tcflush(fd, TCIFLUSH);
-	tcsetattr(fd, TCSANOW, &newtio);
 
 	char command_buffer[80];
 	int command_length = 0;
@@ -105,7 +76,6 @@ int main(int argc, char **argv) {
 }
 
 void cleanup(int s) {
-	tcsetattr(fd, TCSANOW, &oldtio);
 	close(fd);
 
 	fflush(stdout);
